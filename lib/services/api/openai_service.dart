@@ -4,6 +4,14 @@ import 'package:http/http.dart' as http;
 import '../../config/app_config.dart';
 import '../../models/check_model.dart';
 
+class NotABillException implements Exception {
+  final String message;
+  const NotABillException(this.message);
+  
+  @override
+  String toString() => message;
+}
+
 class OpenAIService {
   static const String _baseUrl = 'https://api.openai.com/v1';
   
@@ -61,10 +69,33 @@ class OpenAIService {
       print('📝 Parsed JSON content:');
       print(cleanedContentString);
       
-      final checkData = jsonDecode(cleanedContentString) as Map<String, dynamic>;
+      // Check if the response mentions it's not a bill/receipt
+      if (cleanedContentString.toLowerCase().contains('not a bill') || 
+          cleanedContentString.toLowerCase().contains('not a receipt') ||
+          cleanedContentString.toLowerCase().contains('unable to identify') ||
+          cleanedContentString.toLowerCase().contains('cannot process')) {
+        throw NotABillException('The uploaded image does not appear to be a valid bill or receipt.');
+      }
+      
+      // Try to parse as JSON, if it fails it might not be a bill
+      Map<String, dynamic> checkData;
+      try {
+        checkData = jsonDecode(cleanedContentString) as Map<String, dynamic>;
+      } catch (e) {
+        throw NotABillException('The image could not be processed as a bill. Please upload a clear photo of a receipt or invoice.');
+      }
+      
+      // Check if required fields exist
+      if (!checkData.containsKey('name') || !checkData.containsKey('body') || !checkData.containsKey('total')) {
+        throw NotABillException('The image doesn\'t contain the required bill information. Please upload a different image.');
+      }
 
       // Validate and convert items
       final List<dynamic> rawItems = checkData['body'] as List<dynamic>;
+      if (rawItems.isEmpty) {
+        throw NotABillException('No items were detected in this bill. Please upload a clearer image.');
+      }
+      
       final List<double> itemsList = rawItems
           .map((item) => (item is num) ? item.toDouble() : double.parse(item.toString()))
           .toList();
@@ -92,6 +123,10 @@ class OpenAIService {
       );
     } catch (e) {
       print('❌ Error processing response: $e');
+      // Re-throw the NotABillException to be caught by the UI
+      if (e is NotABillException) {
+        throw e;
+      }
       throw Exception('Error processing OpenAI response: $e');
     }
   }

@@ -36,8 +36,38 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage = 'An error occurred while processing the image.';
+        
+        // Check if it's our custom NotABillException
+        if (e.toString().contains('The uploaded image does not appear to be a valid bill') ||
+            e.toString().contains('The image could not be processed as a bill') ||
+            e.toString().contains('The image doesn\'t contain the required bill information') ||
+            e.toString().contains('No items were detected in this bill')) {
+          errorMessage = e.toString();
+        }
+        
+        // Show error dialog with more details
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Invalid Image'),
+            content: Text(errorMessage),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        
+        // Also show a brief snackbar
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(
+            content: const Text('The image could not be processed as a valid bill'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
     } finally {
