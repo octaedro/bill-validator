@@ -84,9 +84,11 @@ app.*.map.json
 .vscode/
 .DS_Store
 .atom/
+.build/
 .buildlog/
 .history
 .svn/
+.swiftpm/
 migrate_working_dir/
 
 # API Keys and Environment Variables (our configuration)
