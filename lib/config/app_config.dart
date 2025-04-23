@@ -26,11 +26,13 @@ Given a photo of a receipt or invoice, you must:
 3. Extract the "Total" amount from the invoice.
 4. Verify whether the sum of the line-item amounts equals the extracted total.
 
+Important: When extracting line items, include actual products or services AND taxes. DO NOT include subtotals, as they are partial sums. Include taxes, tips, and other charges as separate line items.
+
 Respond **only** in the following JSON format, with no additional text or markdown:
 {
   "name": "Business Name",
-  "body": [10.99, 24.50, ...],
-  "total": 35.49,
+  "body": [10.99, 24.50, 2.35, ...],
+  "total": 37.84,
   "match": true
 }
 
